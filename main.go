@@ -35,6 +35,7 @@ func main() {
 
 	// Set up logging
 	log.SetFormatter(&log.TextFormatter{})
+	log.SetReportCaller(true)
 
 	// Set up routes
 	r := mux.NewRouter()
@@ -42,6 +43,8 @@ func main() {
 
 	// Middleware
 	loggedRouter := gorilla.LoggingHandler(os.Stdout, r)
+
+	log.Infof("Starting on host %s port %s", viper.GetString("host"), viper.GetString("port"))
 
 	// Start
 	h := net.JoinHostPort(viper.GetString("host"), viper.GetString("port"))
