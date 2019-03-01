@@ -18,15 +18,16 @@ func main() {
 	// Setup environment
 	viper.AutomaticEnv()
 
+	// Api environment from heroku
+	viper.BindEnv("port")
+	viper.BindEnv("host")
+
+	// Api environment from env file
 	viper.SetEnvPrefix("pindish")
 
 	// Pinterest data
 	viper.BindEnv("app_id")
 	viper.BindEnv("app_secret")
-
-	// Api environment
-	viper.BindEnv("port")
-	viper.BindEnv("host")
 
 	// Database environment
 	viper.BindEnv("dbport")
