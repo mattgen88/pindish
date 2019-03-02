@@ -18,7 +18,11 @@ import (
 )
 
 type MyCustomClaims struct {
-	ID string `json:"id"`
+	ID    string `json:"id"`
+	Token string `json:"token"`
+	FName string `json:"fname"`
+	UName string `json:"uname"`
+	Image string `json:"image"`
 	jwt.StandardClaims
 }
 
@@ -93,6 +97,10 @@ func (h *Handlers) CatchHandler(w http.ResponseWriter, r *http.Request) {
 	// Create the Claims
 	claims := MyCustomClaims{
 		user.ID,
+		user.OAuth.AccessToken,
+		user.FirstName,
+		user.UserName,
+		user.Image["60x60"].URL,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 			Issuer:    "pindish",

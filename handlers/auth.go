@@ -2,14 +2,12 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/mattgen88/pindish/models"
 	uuid "github.com/nu7hatch/gouuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -46,32 +44,37 @@ func (h *Handlers) AuthHandler(w http.ResponseWriter, r *http.Request) {
 
 type key int
 
-// CtxUserID is for looking up the user id from context
-const CtxUserID key = iota
+const (
+	// CtxUserID used to access user id
+	CtxUserID key = iota
+	// CtxAccessToken used to access user token
+	CtxAccessToken key = iota
+	// CtxUserImage used to access user image
+	CtxUserImage key = iota
+	// CtxUserFName used to access user first name
+	CtxUserFName key = iota
+	//CtxUserUName used to access user username
+	CtxUserUName key = iota
+)
 
-func getUserAccount(ctx context.Context, db *sql.DB) (*models.PinterestUser, error) {
-	id := ctx.Value(CtxUserID).(string)
-	var fname, uname, image, url, token string
-	err := db.QueryRow(`SELECT first_name, username, image, url, token FROM users WHERE id = $1`, id).Scan(&fname, &uname, &image, &url, &token)
-	if err != nil {
-		log.WithField("id", id).Warn("Failed to query account")
-		return nil, err
-	}
-	return &models.PinterestUser{
-		ID:        id,
-		FirstName: fname,
-		UserName:  uname,
-		Image: models.PinterestImages{
-			"60x60": models.PinterestImage{
-				URL:    image,
-				Height: 60,
-				Width:  60,
-			},
-		},
-		OAuth: &models.PinterestOAuthResponse{
-			AccessToken: token,
-		},
-	}, nil
+func getToken(ctx context.Context) string {
+	return ctx.Value(CtxAccessToken).(string)
+}
+
+func getUserID(ctx context.Context) string {
+	return ctx.Value(CtxUserID).(string)
+}
+
+func getUserImage(ctx context.Context) string {
+	return ctx.Value(CtxUserImage).(string)
+}
+
+func getUserFName(ctx context.Context) string {
+	return ctx.Value(CtxUserFName).(string)
+}
+
+func getUserUName(ctx context.Context) string {
+	return ctx.Value(CtxUserUName).(string)
 }
 
 // AuthRequired is middleware that handles auth checking
@@ -104,8 +107,12 @@ func AuthRequired(next http.HandlerFunc) http.HandlerFunc {
 		})
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			ctx := context.Background()
+			ctx := r.Context()
 			ctx = context.WithValue(ctx, CtxUserID, claims["id"])
+			ctx = context.WithValue(ctx, CtxAccessToken, claims["token"])
+			ctx = context.WithValue(ctx, CtxUserFName, claims["fname"])
+			ctx = context.WithValue(ctx, CtxUserUName, claims["uname"])
+			ctx = context.WithValue(ctx, CtxUserImage, claims["image"])
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}

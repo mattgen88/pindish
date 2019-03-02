@@ -40,17 +40,93 @@ type PinterestBoardResponse struct {
 
 // PinterestBoard describes a pinterest board
 type PinterestBoard struct {
-	Name        string              `json:"name"`
-	URL         string              `json:"url"`
-	Image       PinterestImages     `json:"image"`
-	Counts      PinterestBoardCount `json:"counts"`
-	ID          int                 `json:"id"`
-	Description string              `json:"description"`
+	Name        string          `json:"name"`
+	URL         string          `json:"url"`
+	Image       PinterestImages `json:"image"`
+	Counts      PinterestCount  `json:"counts"`
+	ID          string          `json:"id"`
+	Description string          `json:"description"`
 }
 
-// PinterestBoardCount describes a pinterest board count
-type PinterestBoardCount struct {
+// PinterestCount describes a pinterest board count
+type PinterestCount struct {
 	Pins          int `json:"pins"`
 	Collaborators int `json:"collaborators"`
 	Followers     int `json:"followers"`
+	Saves         int `json:"saves"`
+	Comments      int `json:"comments"`
+}
+
+//PinterestPinsResponse describes /v1/me/boards/{id}/pins/ response
+type PinterestPinsResponse struct {
+	Data []PinterestPins `json:"data"`
+}
+
+// PinterestPins describes the pins on a board
+type PinterestPins struct {
+	Attribution  string               `json:"attribution"`
+	Creator      PinterestCreator     `json:"creator"`
+	URL          string               `json:"url"`
+	OriginalLink string               `json:"original_link"`
+	Note         string               `json:"note"`
+	Color        string               `json:"color"`
+	Link         string               `json:"link"`
+	Board        PinterestBoard       `json:"board"`
+	Image        PinterestImages      `json:"image"`
+	Counts       PinterestCount       `json:"count"`
+	ID           string               `json:"id"`
+	Metadata     PinterestPinMetadata `json:"metadata"`
+}
+
+// PinterestPinMetadata describes a pin's metadata
+type PinterestPinMetadata struct {
+	Article *MetadataArticle `json:"article"`
+	Link    *MetadataLink    `json:"link"`
+	Recipe  *MetadataRecipe  `json:"recipe"`
+}
+
+// MetadataArticle describes the article
+type MetadataArticle struct {
+	PublishedAt string `json:"published_at"`
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Authors     []struct {
+		Name string `json:"name"`
+	} `json:"authors"`
+}
+
+// MetadataLink describes the link
+type MetadataLink struct {
+	Locale      string `json:"locale"`
+	Title       string `json:"title"`
+	SiteName    string `json:"site_name"`
+	Description string `json:"description"`
+	Favicon     string `json:"favicon"`
+}
+
+// MetadataRecipe describes a recipe
+type MetadataRecipe struct {
+	Servings struct {
+		Serves  string `json:"serves"`
+		Summary string `json:"summary"`
+	} `json:"servings"`
+	Name        string       `json:"name"`
+	Ingredients []Ingredient `json:"ingredients"`
+}
+
+// Ingredient describes an ingredient
+type Ingredient struct {
+	Category    string `json:"category"`
+	Ingredients []struct {
+		Amount string `json:"amount"`
+		Name   string `json:"name"`
+	} `json:"ingredients"`
+}
+
+// PinterestCreator describes a creator
+type PinterestCreator struct {
+	URL       string `json:"url"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	ID        string `json:"id"`
 }
