@@ -14,5 +14,12 @@
 # Heroku
 .env
 
+# certs
+selfsigned.key
+selfsigned.crt
+
+# Mocks
+mocks/
+
 # Build artifact
 pindish

@@ -9,9 +9,13 @@ import (
 
 	"github.com/mattgen88/pindish/handlers"
 
+	"database/sql"
+
 	gorilla "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -21,6 +25,7 @@ func main() {
 	// Api environment from heroku
 	viper.BindEnv("port")
 	viper.BindEnv("host")
+	viper.BindEnv("database_url")
 
 	// Api environment from env file
 	viper.SetEnvPrefix("pindish")
@@ -28,18 +33,29 @@ func main() {
 	// Pinterest data
 	viper.BindEnv("app_id")
 	viper.BindEnv("app_secret")
-
-	// Database environment
-	viper.BindEnv("dbport")
-	viper.BindEnv("dbhost")
+	viper.BindEnv("frontend_uri")
+	viper.BindEnv("mock")
 
 	// Set up logging
 	log.SetFormatter(&log.TextFormatter{})
 	log.SetReportCaller(true)
 
+	// Connect to postgres
+	db, err := sql.Open("postgres", viper.GetString("database_url"))
+	if err != nil {
+		log.Fatal(err)
+		panic(err)
+	}
+
+	h := handlers.Handlers{
+		DB: db,
+	}
+
 	// Set up routes
 	r := mux.NewRouter()
-	r.HandleFunc("/", handlers.HomeHandler)
+	r.HandleFunc("/", h.HomeHandler)
+	r.HandleFunc("/auth", h.AuthHandler)
+	r.HandleFunc("/catch", h.CatchHandler)
 
 	// Middleware
 	loggedRouter := gorilla.LoggingHandler(os.Stdout, r)
@@ -47,6 +63,5 @@ func main() {
 	log.Infof("Starting on host %s port %s", viper.GetString("host"), viper.GetString("port"))
 
 	// Start
-	h := net.JoinHostPort(viper.GetString("host"), viper.GetString("port"))
-	http.ListenAndServe(h, loggedRouter)
+	http.ListenAndServe(net.JoinHostPort(viper.GetString("host"), viper.GetString("port")), loggedRouter)
 }
