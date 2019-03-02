@@ -38,5 +38,4 @@ func GetBoardPins(token, id string) ([]models.PinterestPins, error) {
 	json.NewDecoder(response.Body).Decode(r)
 
 	return r.Data, nil
-
 }

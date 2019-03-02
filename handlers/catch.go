@@ -1,14 +1,12 @@
 package handlers
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -41,7 +39,7 @@ func (h *Handlers) CatchHandler(w http.ResponseWriter, r *http.Request) {
 	if viper.GetBool("mock") {
 		oauth, err = getAuthMock(state, code)
 	} else {
-		oauth, err = getAuth(state, code)
+		oauth, err = pinterest.GetAuth(state, code)
 	}
 
 	if err != nil {
@@ -135,39 +133,6 @@ func (h *Handlers) CatchHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// getAuth will make a request to the pinterest API to get an oauth token for requests
-func getAuth(state, code string) (*models.PinterestOAuthResponse, error) {
-
-	u := &url.URL{}
-	u, _ = u.Parse("https://api.pinterest.com/v1/oauth/token")
-
-	q := u.Query()
-	q.Add("grant_type", "authorization_code")
-	q.Add("client_id", viper.GetString("app_id"))
-	q.Add("client_secret", viper.GetString("app_secret"))
-	q.Add("code", code)
-
-	u.RawQuery = q.Encode()
-
-	log.WithField("url", u.String()).Info("fetching token")
-
-	response, err := netClient.Post(u.String(), "text/plain", bytes.NewReader([]byte{}))
-	if err != nil {
-		return nil, err
-	}
-
-	if response.StatusCode > 200 {
-		return nil, fmt.Errorf("Bad status getting token for user %d", response.StatusCode)
-	}
-
-	defer response.Body.Close()
-
-	oauth := &models.PinterestOAuthResponse{}
-	json.NewDecoder(response.Body).Decode(oauth)
-
-	return oauth, nil
-}
-
 func getAuthMock(state, code string) (*models.PinterestOAuthResponse, error) {
 	data, _ := ioutil.ReadFile("mocks/oauth.json")
 	var oauth models.PinterestOAuthResponse
@@ -188,21 +153,11 @@ func createAccount(u *models.PinterestUser, db *sql.DB) error {
 	rows, err := db.Query(`
 		INSERT INTO users(
 			id,
-			first_name,
-			username,
-			url,
-			image,
-			token
 		)
 		VALUES(
-			$1, $2, $3, $4, $5, $6
+			$1,
 		) ON CONFLICT (id) DO NOTHING`,
 		id,
-		u.FirstName,
-		u.UserName,
-		u.URL,
-		u.Image["60x60"].URL,
-		u.OAuth.AccessToken,
 	)
 	if err != nil {
 		log.WithField("id", id).WithField("msg", err).Warn("failed to insert user into database")

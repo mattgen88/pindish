@@ -141,7 +141,3 @@ func putBoardDB(userID string, m models.PinterestBoard, db *sql.DB) error {
 	defer ownedRows.Close()
 	return nil
 }
-
-func getBoardDB(userID string, m models.PinterestBoard, db *sql.DB) error {
-	return nil
-}
