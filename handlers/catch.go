@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -78,20 +76,6 @@ func (h *Handlers) CatchHandler(w http.ResponseWriter, r *http.Request) {
 
 	user.OAuth = oauth
 
-	// Store user ID along with token in database
-	err = createAccount(user, h.DB)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"user": user,
-			"msg":  err,
-		}).Warning("failed to create account for user")
-
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Add("content-type", "text/plain")
-		io.WriteString(w, "Failed to create local account for pinterest user")
-		return
-	}
-
 	mySigningKey := []byte(viper.GetString("signing_key"))
 
 	// Create the Claims
@@ -145,24 +129,4 @@ func getUserMock(o *models.PinterestOAuthResponse) (*models.PinterestUser, error
 	var user models.PinterestUserResponse
 	json.Unmarshal(data, &user)
 	return &user.Data, nil
-}
-
-func createAccount(u *models.PinterestUser, db *sql.DB) error {
-	id, _ := strconv.Atoi(u.ID)
-
-	rows, err := db.Query(`
-		INSERT INTO users(
-			id,
-		)
-		VALUES(
-			$1,
-		) ON CONFLICT (id) DO NOTHING`,
-		id,
-	)
-	if err != nil {
-		log.WithField("id", id).WithField("msg", err).Warn("failed to insert user into database")
-	}
-	defer rows.Close()
-
-	return err
 }
