@@ -1,5 +1,7 @@
 # github.com/AreaHQ/jsonhal v0.0.0-20160928112100-715ffaec982b
 github.com/AreaHQ/jsonhal
+# github.com/dgrijalva/jwt-go v3.2.0+incompatible
+github.com/dgrijalva/jwt-go
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
 # github.com/gorilla/handlers v1.4.0
@@ -19,10 +21,15 @@ github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
+# github.com/lib/pq v1.0.0
+github.com/lib/pq
+github.com/lib/pq/oid
 # github.com/magiconair/properties v1.8.0
 github.com/magiconair/properties
 # github.com/mitchellh/mapstructure v1.1.2
 github.com/mitchellh/mapstructure
+# github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
+github.com/nu7hatch/gouuid
 # github.com/pelletier/go-toml v1.2.0
 github.com/pelletier/go-toml
 # github.com/sirupsen/logrus v1.3.0
