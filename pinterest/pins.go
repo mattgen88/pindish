@@ -12,7 +12,7 @@ import (
 // GetBoardPins gets the pins for a board
 func GetBoardPins(token, id string) ([]models.PinterestPins, error) {
 	u := &url.URL{}
-	u, _ = u.Parse(fmt.Sprintf("https://api.pinterest.com/v1/me/boards/%s/pins/", id))
+	u, _ = u.Parse(fmt.Sprintf("https://api.pinterest.com/v1/boards/%s/pins/", id))
 
 	q := u.Query()
 	q.Add("access_token", token)
