@@ -56,9 +56,16 @@ func main() {
 	r.HandleFunc("/", h.HomeHandler)
 	r.HandleFunc("/auth", h.AuthHandler)
 	r.HandleFunc("/catch", h.CatchHandler)
+	r.HandleFunc("/boards", handlers.AuthRequired(h.BoardsHandler))
+
+	headersOk := gorilla.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
+	originsOk := gorilla.AllowedOrigins([]string{viper.GetString("frontend_url")})
+	methodsOk := gorilla.AllowedMethods([]string{"GET", "HEAD", "OPTIONS"})
+
+	corsRouter := gorilla.CORS(headersOk, originsOk, methodsOk)(r)
 
 	// Middleware
-	loggedRouter := gorilla.LoggingHandler(os.Stdout, r)
+	loggedRouter := gorilla.LoggingHandler(os.Stdout, corsRouter)
 
 	log.Infof("Starting on host %s port %s", viper.GetString("host"), viper.GetString("port"))
 

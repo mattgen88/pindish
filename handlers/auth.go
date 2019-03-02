@@ -1,11 +1,15 @@
 package handlers
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
+	"github.com/dgrijalva/jwt-go"
+	"github.com/mattgen88/pindish/models"
 	uuid "github.com/nu7hatch/gouuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -38,4 +42,75 @@ func (h *Handlers) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
 
 	return
+}
+
+type key int
+
+// CtxUserID is for looking up the user id from context
+const CtxUserID key = iota
+
+func getUserAccount(ctx context.Context, db *sql.DB) (*models.PinterestUser, error) {
+	id := ctx.Value(CtxUserID).(string)
+	var fname, uname, image, url, token string
+	err := db.QueryRow(`SELECT first_name, username, image, url, token FROM users WHERE id = $1`, id).Scan(&fname, &uname, &image, &url, &token)
+	if err != nil {
+		log.WithField("id", id).Warn("Failed to query account")
+		return nil, err
+	}
+	return &models.PinterestUser{
+		ID:        id,
+		FirstName: fname,
+		UserName:  uname,
+		Image: models.PinterestImages{
+			"60x60": models.PinterestImage{
+				URL:    image,
+				Height: 60,
+				Width:  60,
+			},
+		},
+		OAuth: &models.PinterestOAuthResponse{
+			AccessToken: token,
+		},
+	}, nil
+}
+
+// AuthRequired is middleware that handles auth checking
+func AuthRequired(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie("token")
+		tokenString := c.Value
+		if err != nil {
+			// reject request
+			w.Header().Add("content-type", "text/plain")
+			w.WriteHeader(http.StatusForbidden)
+			io.WriteString(w, "Authorization required")
+			return
+		}
+
+		// Parse takes the token string and a function for looking up the key. The latter is especially
+		// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
+		// head of the token to identify which key to use, but the parsed token (head and claims) is provided
+		// to the callback, providing flexibility.
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			}
+
+			// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+			return []byte(viper.GetString("signing_key")), nil
+		})
+
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			ctx := context.Background()
+			ctx = context.WithValue(ctx, CtxUserID, claims["id"])
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		// reject request
+		w.Header().Add("content-type", "text/plain")
+		w.WriteHeader(http.StatusForbidden)
+		io.WriteString(w, "Authorization required")
+	})
 }

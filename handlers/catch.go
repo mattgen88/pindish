@@ -18,6 +18,7 @@ import (
 )
 
 type MyCustomClaims struct {
+	ID string `json:"id"`
 	jwt.StandardClaims
 }
 
@@ -91,6 +92,7 @@ func (h *Handlers) CatchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create the Claims
 	claims := MyCustomClaims{
+		user.ID,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 			Issuer:    "pindish",
@@ -219,7 +221,7 @@ func createAccount(u *models.PinterestUser, db *sql.DB) error {
 		) ON CONFLICT (id) DO NOTHING`,
 		u.ID,
 		u.FirstName,
-		u.Username,
+		u.UserName,
 		u.URL,
 		u.Image["60x60"].URL,
 		u.OAuth.AccessToken,

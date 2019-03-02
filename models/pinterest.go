@@ -17,7 +17,7 @@ type PinterestUser struct {
 	ID        string          `json:"id"`
 	FirstName string          `json:"first_name"`
 	LastName  string          `json:"last_name"`
-	Username  string          `json:"username"`
+	UserName  string          `json:"username"`
 	URL       string          `json:"url"`
 	Image     PinterestImages `json:"image"`
 	OAuth     *PinterestOAuthResponse
@@ -42,9 +42,9 @@ type PinterestBoardResponse struct {
 type PinterestBoard struct {
 	Name        string              `json:"name"`
 	URL         string              `json:"url"`
-	Image       PinterestImage      `json:"image"`
+	Image       PinterestImages     `json:"image"`
 	Counts      PinterestBoardCount `json:"counts"`
-	ID          string              `json:"id"`
+	ID          int                 `json:"id"`
 	Description string              `json:"description"`
 }
 
