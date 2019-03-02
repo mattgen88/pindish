@@ -55,17 +55,6 @@ func (h *Handlers) BoardsHandler(w http.ResponseWriter, r *http.Request) {
 		Username: getUserUName(ctx),
 	}
 
-	if err != nil {
-		log.WithFields(log.Fields{
-			"msg": err,
-		}).Warning("failed to get boards")
-
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Add("content-type", "text/plain")
-		io.WriteString(w, "Failed to get user for boards")
-		return
-	}
-
 	var boards []models.PinterestBoard
 	if viper.GetBool("mock") {
 		boards, err = getBoardsMock(token)

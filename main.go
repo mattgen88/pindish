@@ -58,10 +58,11 @@ func main() {
 	r.HandleFunc("/auth", h.AuthHandler)
 	r.HandleFunc("/catch", h.CatchHandler)
 	r.HandleFunc("/boards", handlers.AuthRequired(h.BoardsHandler))
+	r.HandleFunc("/favorite/board/{id:[0-9]+}", handlers.AuthRequired(h.FavoritesHandler))
 	r.HandleFunc("/recipes/board/{id:[0-9]+}", handlers.AuthRequired(h.RecipesHandler))
 
 	headersOk := gorilla.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
-	originsOk := gorilla.AllowedOrigins([]string{viper.GetString("frontend_url"), "https://localhost:8080"})
+	originsOk := gorilla.AllowedOrigins([]string{viper.GetString("frontend_uri"), "https://localhost:8080"})
 	methodsOk := gorilla.AllowedMethods([]string{"GET", "HEAD", "OPTIONS", "POST", "PUT"})
 
 	corsRouter := gorilla.CORS(originsOk, headersOk, methodsOk, gorilla.AllowCredentials())(r)
