@@ -1,12 +1,16 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
+	"strconv"
+	"time"
+
+	"github.com/mattgen88/pindish/pinterest"
 
 	"github.com/AreaHQ/jsonhal"
 	"github.com/mattgen88/pindish/models"
@@ -72,7 +76,7 @@ func (h *Handlers) BoardsHandler(w http.ResponseWriter, r *http.Request) {
 	j := &BoardsResponse{}
 
 	var boardsResponse []Board
-	// @TODO: Fix this to add an embed one at a time instead of as an array, giving an id as the key
+
 	for _, b := range boards {
 		board := Board{
 			Name:        b.Name,
@@ -82,6 +86,7 @@ func (h *Handlers) BoardsHandler(w http.ResponseWriter, r *http.Request) {
 			Description: b.Description,
 			Counts:      b.Counts,
 		}
+		putBoardDB(getUserID(ctx), b, h.DB)
 		board.SetLink("recipes", fmt.Sprintf("/recipes/board/%s", board.ID), "recipes")
 		boardsResponse = append(boardsResponse, board)
 	}
@@ -91,7 +96,7 @@ func (h *Handlers) BoardsHandler(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse, err := json.Marshal(j)
 	if err != nil {
-		log.Fatal(err)
+		log.Warn(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Add("content-type", "text/plain")
 		io.WriteString(w, "Failed to build response")
@@ -112,32 +117,42 @@ func getBoardsMock(token string) ([]models.PinterestBoard, error) {
 }
 
 func getBoards(token string) ([]models.PinterestBoard, error) {
-	u := &url.URL{}
-	u, _ = u.Parse("https://api.pinterest.com/v1/me/boards/")
 
-	q := u.Query()
-	q.Add("access_token", token)
-	q.Add("fields", "id,name,url,counts,description,image")
+	// select boards from database, see if any are old, if so we can request user's boards
+	return pinterest.GetMyBoards(token)
 
-	u.RawQuery = q.Encode()
+}
 
-	log.WithField("url", u.String()).Info("fetching boards")
-
-	response, err := netClient.Get(u.String())
-
+func putBoardDB(userID string, m models.PinterestBoard, db *sql.DB) error {
+	uid, _ := strconv.Atoi(userID)
+	boardsRows, err := db.Query(`
+	INSERT INTO boards (
+		id, name, url, description, image
+	)
+	VALUES (
+		$1, $2, $3, $4, $5
+	) ON CONFLICT(id) DO NOTHING`, m.ID, m.Name, m.URL, m.Description, m.Image["60x60"].URL)
 	if err != nil {
-		return nil, err
+		log.WithField("msg", err).WithField("userid", uid).WithField("board", m).Warn("Failed to insert into boards")
+		return err
 	}
+	defer boardsRows.Close()
 
-	if response.StatusCode > 200 {
-		return nil, fmt.Errorf("Bad status getting info on boards %d", response.StatusCode)
+	ownedRows, err := db.Query(`
+	INSERT INTO owned_boards (
+		user_id, board_id, show, last_update
+	)
+	VALUES (
+		$1, $2, $3, $4
+	) ON CONFLICT DO NOTHING`, uid, m.ID, false, time.Now().Unix())
+	if err != nil {
+		log.WithField("msg", err).WithField("userid", uid).WithField("board", m).Warn("Failed to insert into owned_boards")
+		return err
 	}
+	defer ownedRows.Close()
+	return nil
+}
 
-	defer response.Body.Close()
-
-	r := &models.PinterestBoardResponse{}
-	json.NewDecoder(response.Body).Decode(r)
-
-	return r.Data, nil
-
+func getBoardDB(userID string, m models.PinterestBoard, db *sql.DB) error {
+	return nil
 }

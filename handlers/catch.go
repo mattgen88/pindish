@@ -9,10 +9,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mattgen88/pindish/models"
+	"github.com/mattgen88/pindish/pinterest"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -61,7 +63,7 @@ func (h *Handlers) CatchHandler(w http.ResponseWriter, r *http.Request) {
 	if viper.GetBool("mock") {
 		user, err = getUserMock(oauth)
 	} else {
-		user, err = getUser(oauth)
+		user, err = pinterest.GetMe(oauth.AccessToken)
 	}
 
 	if err != nil {
@@ -173,39 +175,6 @@ func getAuthMock(state, code string) (*models.PinterestOAuthResponse, error) {
 	return &oauth, nil
 }
 
-// getUser will make a request to get information about the user who we just authorized
-// This is necessary to create a database entry to associate data with the user
-func getUser(o *models.PinterestOAuthResponse) (*models.PinterestUser, error) {
-	u := &url.URL{}
-	u, _ = u.Parse("https://api.pinterest.com/v1/me/")
-
-	q := u.Query()
-	q.Add("access_token", o.AccessToken)
-	q.Add("fields", "first_name,id,last_name,url,image,username")
-
-	u.RawQuery = q.Encode()
-
-	log.WithField("url", u.String()).Info("fetching user")
-
-	response, err := netClient.Get(u.String())
-
-	if err != nil {
-		return nil, err
-	}
-
-	if response.StatusCode > 200 {
-		return nil, fmt.Errorf("Bad status getting info on user %d", response.StatusCode)
-	}
-
-	defer response.Body.Close()
-
-	r := &models.PinterestUserResponse{}
-	json.NewDecoder(response.Body).Decode(r)
-
-	user := r.Data
-	return &user, nil
-}
-
 func getUserMock(o *models.PinterestOAuthResponse) (*models.PinterestUser, error) {
 	data, _ := ioutil.ReadFile("mocks/user.json")
 	var user models.PinterestUserResponse
@@ -214,8 +183,9 @@ func getUserMock(o *models.PinterestOAuthResponse) (*models.PinterestUser, error
 }
 
 func createAccount(u *models.PinterestUser, db *sql.DB) error {
+	id, _ := strconv.Atoi(u.ID)
 
-	_, err := db.Query(`
+	rows, err := db.Query(`
 		INSERT INTO users(
 			id,
 			first_name,
@@ -227,13 +197,17 @@ func createAccount(u *models.PinterestUser, db *sql.DB) error {
 		VALUES(
 			$1, $2, $3, $4, $5, $6
 		) ON CONFLICT (id) DO NOTHING`,
-		u.ID,
+		id,
 		u.FirstName,
 		u.UserName,
 		u.URL,
 		u.Image["60x60"].URL,
 		u.OAuth.AccessToken,
 	)
+	if err != nil {
+		log.WithField("id", id).WithField("msg", err).Warn("failed to insert user into database")
+	}
+	defer rows.Close()
 
 	return err
 }

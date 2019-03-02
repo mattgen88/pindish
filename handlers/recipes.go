@@ -1,12 +1,13 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
+
+	"github.com/mattgen88/pindish/pinterest"
 
 	"github.com/AreaHQ/jsonhal"
 	"github.com/gorilla/mux"
@@ -104,32 +105,21 @@ func getPinsMock(token, id string) ([]models.PinterestPins, error) {
 }
 
 func getPins(token, id string) ([]models.PinterestPins, error) {
-	u := &url.URL{}
-	u, _ = u.Parse(fmt.Sprintf("https://api.pinterest.com/v1/me/boards/%s/pins/", id))
+	return pinterest.GetBoardPins(token, id)
+}
 
-	q := u.Query()
-	q.Add("access_token", token)
-	q.Add("fields", "id,link,note,url,metadata,creator,original_link")
-
-	u.RawQuery = q.Encode()
-
-	log.WithField("url", u.String()).WithField("pin", id).Info("fetching pins")
-
-	response, err := netClient.Get(u.String())
-
+func getRecipes(id string, db *sql.DB) ([]models.PinterestPins, error) {
+	rows, err := db.Query(`SELECT * FROM recipes WHERE board_id = $1`, id)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+	return nil, nil
+}
 
-	if response.StatusCode > 200 {
-		return nil, fmt.Errorf("Bad status getting info on pins %d", response.StatusCode)
-	}
-
-	defer response.Body.Close()
-
-	r := &models.PinterestPinsResponse{}
-	json.NewDecoder(response.Body).Decode(r)
-
-	return r.Data, nil
-
+func putRecipes(userid, boardid string, r RecipesResponse) error {
+	// foreach recipes in the response
+	// insert the recipe into the database
+	// insert the relation table
+	return nil
 }

@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS users (
-	id varchar PRIMARY KEY,
+	id bigint PRIMARY KEY,
 	first_name varchar,
 	username varchar,
 	image varchar,
@@ -8,29 +8,45 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS owned_boards (
-	id varchar PRIMARY KEY,
-	user_id varchar,
-	board_id varchar
+	user_id bigint,
+	board_id bigint,
+	show boolean,
+	last_update bigint,
+	PRIMARY KEY(user_id, board_id)
 );
 
 CREATE TABLE IF NOT EXISTS boards (
-	id varchar,
-	user_id varchar,
+	id bigint PRIMARY KEY,
 	name varchar,
 	url varchar,
 	description varchar,
 	image varchar
 );
 
+CREATE TABLE IF NOT EXISTS board_counts (
+	board_id bigint PRIMARY KEY,
+	pins int,
+	collaborators int,
+	followers int
+);
+
 CREATE TABLE IF NOT EXISTS recipes (
-	id varchar,
+	id bigint PRIMARY KEY,
 	name varchar,
-	url varchar
+	url varchar,
+	serves varchar,
+	serving_summary varchar
 );
 
 CREATE TABLE IF NOT EXISTS recipe_ingredients (
-	id varchar,
-	recipe_id varchar,
-	ingredient_id varchar,
+	id serial PRIMARY KEY,
+	recipe_id bigint,
+	ingredient_id bigint,
 	quantity varchar
+);
+
+CREATE TABLE IF NOT EXISTS ingredients (
+	id serial PRIMARY KEY,
+	category varchar,
+	name varchar
 );
