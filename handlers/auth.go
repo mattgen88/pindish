@@ -79,7 +79,7 @@ func AuthRequired(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie("token")
 		if err != nil {
-			log.Warn("No token cookie")
+			log.WithField("cookies", c).Warn("No token cookie")
 			// reject request
 			w.Header().Add("content-type", "text/plain")
 			w.WriteHeader(http.StatusForbidden)
