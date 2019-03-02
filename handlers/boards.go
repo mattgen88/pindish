@@ -117,7 +117,7 @@ func getBoards(token string) ([]models.PinterestBoard, error) {
 
 	q := u.Query()
 	q.Add("access_token", token)
-	q.Add("fields", "id,link,url,color,board,metadata,counts,created_at,creator,image")
+	q.Add("fields", "id,name,url,counts,description,image")
 
 	u.RawQuery = q.Encode()
 

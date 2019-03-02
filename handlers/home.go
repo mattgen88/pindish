@@ -21,6 +21,7 @@ func (h *Handlers) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	j.SetLink("auth", "/auth", "Authorize")
 	j.SetLink("catch", "/catch", "Catch endpoint from oauth process")
 	j.SetLink("boards", "/boards", "List authorized user's boards")
+	j.SetLink("recipes", "/recipes/board/{id}", "List recipes found on a board")
 	// j.SetLink("recipes", "/recipes", "List recipes found for user")
 	// j.SetLink("ingredients", "/ingredients", "List ingredients needed across recipes")
 
