@@ -48,6 +48,8 @@ func (h *Handlers) FavoritesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setFavorite(id, getUserID(r.Context()), f.Favorited, h.DB)
+
 	j := &FavoritesResponse{
 		Favorited: f.Favorited,
 	}
@@ -71,8 +73,12 @@ func (h *Handlers) FavoritesHandler(w http.ResponseWriter, r *http.Request) {
 
 func setFavorite(boardID, userID string, value bool, db *sql.DB) error {
 	rows, err := db.Query(`
-		UPDATE owned_boards SET show=$1 WHERE user_id = $2 AND board_id = $3
-	`, value, userID, boardID)
+		INSERT INTO owned_boards(user_id, board_id, show) VALUES($1, $2, $3)
+		ON CONFLICT (user_id, board_id)
+		DO
+		UPDATE
+		SET show=$3
+	`, userID, boardID, value)
 	if err != nil {
 		log.WithField("msg", err).WithField("board", boardID).WithField("user", userID).WithField("value", value).Warn("Failed to set owned boards")
 		return err

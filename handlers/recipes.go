@@ -59,7 +59,7 @@ func (h *Handlers) RecipesHandler(w http.ResponseWriter, r *http.Request) {
 	if viper.GetBool("mock") {
 		pins, err = getPinsMock(token, id)
 	} else {
-		pins, err = getPins(token, id)
+		pins, err = pinterest.GetBoardPins(token, id)
 	}
 
 	j := &RecipesResponse{}
@@ -102,10 +102,6 @@ func getPinsMock(token, id string) ([]models.PinterestPins, error) {
 	var pins models.PinterestPinsResponse
 	json.Unmarshal(data, &pins)
 	return pins.Data, nil
-}
-
-func getPins(token, id string) ([]models.PinterestPins, error) {
-	return pinterest.GetBoardPins(token, id)
 }
 
 func getRecipes(id string, db *sql.DB) ([]models.PinterestPins, error) {

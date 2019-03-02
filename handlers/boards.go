@@ -59,7 +59,7 @@ func (h *Handlers) BoardsHandler(w http.ResponseWriter, r *http.Request) {
 	if viper.GetBool("mock") {
 		boards, err = getBoardsMock(token)
 	} else {
-		boards, err = getBoards(token)
+		boards, err = pinterest.GetMyBoards(token)
 	}
 
 	j := &BoardsResponse{}
@@ -103,13 +103,6 @@ func getBoardsMock(token string) ([]models.PinterestBoard, error) {
 	var boards models.PinterestBoardResponse
 	json.Unmarshal(data, &boards)
 	return boards.Data, nil
-}
-
-func getBoards(token string) ([]models.PinterestBoard, error) {
-
-	// select boards from database, see if any are old, if so we can request user's boards
-	return pinterest.GetMyBoards(token)
-
 }
 
 func putBoardDB(userID string, m models.PinterestBoard, db *sql.DB) error {
