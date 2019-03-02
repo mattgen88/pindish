@@ -78,7 +78,6 @@ func getUserAccount(ctx context.Context, db *sql.DB) (*models.PinterestUser, err
 func AuthRequired(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie("token")
-		tokenString := c.Value
 		if err != nil {
 			// reject request
 			w.Header().Add("content-type", "text/plain")
@@ -86,6 +85,7 @@ func AuthRequired(next http.HandlerFunc) http.HandlerFunc {
 			io.WriteString(w, "Authorization required")
 			return
 		}
+		tokenString := c.Value
 
 		// Parse takes the token string and a function for looking up the key. The latter is especially
 		// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
