@@ -16,7 +16,7 @@ func GetBoardPins(token, id string) ([]models.PinterestPins, error) {
 
 	q := u.Query()
 	q.Add("access_token", token)
-	q.Add("fields", "id,link,note,url,metadata,creator,original_link")
+	q.Add("fields", "id,link,note,url,metadata,creator,original_link,image")
 
 	u.RawQuery = q.Encode()
 
