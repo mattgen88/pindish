@@ -79,6 +79,7 @@ func AuthRequired(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie("token")
 		if err != nil {
+			log.Warn("No token cookie")
 			// reject request
 			w.Header().Add("content-type", "text/plain")
 			w.WriteHeader(http.StatusForbidden)
@@ -94,6 +95,7 @@ func AuthRequired(next http.HandlerFunc) http.HandlerFunc {
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			// Don't forget to validate the alg is what you expect:
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				log.Warn("token cookie not signed correctly")
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 			}
 
@@ -109,6 +111,8 @@ func AuthRequired(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// reject request
+		log.Warn("No valid token cookie")
+
 		w.Header().Add("content-type", "text/plain")
 		w.WriteHeader(http.StatusForbidden)
 		io.WriteString(w, "Authorization required")
