@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/mattgen88/pindish/pinterest"
 
 	"github.com/AreaHQ/jsonhal"
@@ -58,32 +57,38 @@ func (h *Handlers) BoardsHandler(w http.ResponseWriter, r *http.Request) {
 		Username: getUserUName(ctx),
 	}
 
-	var boards []models.PinterestBoard
-	getBoardsDb(getUserID(ctx), h.DB)
-	if viper.GetBool("mock") {
-		boards, err = getBoardsMock(token)
-	} else {
-		getBoardsDb(getUserID(ctx), h.DB)
-		boards, err = pinterest.GetMyBoards(token)
-	}
-
 	j := &BoardsResponse{}
 
 	var boardsResponse []Board
+	if boardsResponse, err = getBoardsDb(getUserID(ctx), h.DB); err != nil {
+		// Error occurred
+		log.Info(err)
+		var boards []models.PinterestBoard
+		if viper.GetBool("mock") {
+			log.Warn("Data from mocks!")
+			boards, err = getBoardsMock(token)
+		} else {
+			boards, err = pinterest.GetMyBoards(token)
 
-	for _, b := range boards {
-		board := Board{
-			Name:        b.Name,
-			URL:         b.URL,
-			Image:       b.Image,
-			ID:          b.ID,
-			Description: b.Description,
-			Counts:      b.Counts,
+			for _, b := range boards {
+				board := Board{
+					Name:        b.Name,
+					URL:         b.URL,
+					Image:       b.Image,
+					ID:          b.ID,
+					Description: b.Description,
+					Counts:      b.Counts,
+				}
+				putBoardDB(getUserID(ctx), b, h.DB)
+				boardsResponse = append(boardsResponse, board)
+			}
 		}
-		putBoardDB(getUserID(ctx), b, h.DB)
-		board.SetLink("recipes", fmt.Sprintf("/recipes/board/%s", board.ID), "recipes")
-		boardsResponse = append(boardsResponse, board)
+		// Set Links
+		for _, b := range boardsResponse {
+			b.SetLink("recipes", fmt.Sprintf("/recipes/board/%s", b.ID), "recipes")
+		}
 	}
+
 	j.SetEmbedded("boards", jsonhal.Embedded(boardsResponse))
 	j.SetEmbedded("me", jsonhal.Embedded(user))
 	j.SetLink("self", "/boards", "")
@@ -137,34 +142,57 @@ func putBoardDB(userID string, m models.PinterestBoard, db *sql.DB) error {
 		return err
 	}
 	defer ownedRows.Close()
+
+	countRows, err := db.Query(`
+	INSERT INTO board_counts (
+		board_id, pins, followers, collaborators
+	)
+	VALUES (
+		$1, $2, $3, $4
+	) ON CONFLICT DO NOTHING`, m.ID, m.Counts.Pins, m.Counts.Followers, m.Counts.Collaborators)
+	if err != nil {
+		log.WithField("msg", err).WithField("userid", uid).WithField("board", m).Warn("Failed to insert into board_counts")
+		return err
+	}
+	defer countRows.Close()
 	return nil
 }
 
 func getBoardsDb(userID string, db *sql.DB) ([]Board, error) {
 	var boards []Board
 	rows, err := db.Query(`
-		SELECT owned_boards.show, owned_boards.last_update, boards.id, boards.name, boards.url, boards.description, boards.image FROM owned_boards
+		SELECT owned_boards.show, owned_boards.last_update, boards.id, boards.name, boards.url, boards.description, boards.image, board_counts.pins, board_counts.followers, board_counts.collaborators FROM owned_boards
 		INNER JOIN boards on (owned_boards.board_id = boards.id)
+		INNER JOIN board_counts on (board_counts.board_id = boards.id)
 		WHERE owned_boards.user_id = $1
 	`, userID)
+
 	if err != nil {
 		log.WithField("uid", userID).Warn("Could not select boards")
 		return nil, err
 	}
+
 	defer rows.Close()
+
 	for rows.Next() {
-		var favorited bool
-		var lastUpdate int
-		var id int
-		var name string
-		var url string
-		var description string
-		var image string
-		if err := rows.Scan(&favorited, &lastUpdate, &id, &name, &url, &description, &image); err != nil {
+		var (
+			favorited     bool
+			lastUpdate    int
+			id            int
+			name          string
+			url           string
+			description   string
+			image         string
+			pins          int
+			followers     int
+			collaborators int
+		)
+
+		if err := rows.Scan(&favorited, &lastUpdate, &id, &name, &url, &description, &image, &pins, &followers, &collaborators); err != nil {
 			log.WithField("userID", userID).WithField("msg", err).Warn("Error scanning")
 			continue
 		}
-		spew.Dump(name)
+
 		b := Board{
 			Favorited:   favorited,
 			LastUpdate:  lastUpdate,
@@ -173,8 +201,9 @@ func getBoardsDb(userID string, db *sql.DB) ([]Board, error) {
 			URL:         url,
 			Description: description,
 			Image:       models.PinterestImages{"60x60": models.PinterestImage{URL: image, Height: 60, Width: 60}},
+			Counts:      models.PinterestCount{Pins: pins, Followers: followers, Collaborators: collaborators},
 		}
-		spew.Dump(b)
+
 		boards = append(boards, b)
 	}
 	return boards, nil
