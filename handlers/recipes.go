@@ -151,6 +151,10 @@ func putRecipes(userid, boardid string, pins []models.PinterestPins, db *sql.DB)
 		if p.Metadata.Recipe == nil || p.Metadata.Article == nil {
 			continue
 		}
+		var image string
+		for _, i := range p.Image {
+			image = i.URL
+		}
 		db.Exec(`
 			INSERT INTO recipes
 			(id, name, url, serves, serving_summary, image)
@@ -162,7 +166,7 @@ func putRecipes(userid, boardid string, pins []models.PinterestPins, db *sql.DB)
 			p.URL,
 			p.Metadata.Recipe.Servings.Serves,
 			p.Metadata.Recipe.Servings.Summary,
-			p.Image,
+			image,
 		)
 
 		db.Exec(`
