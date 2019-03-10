@@ -75,9 +75,7 @@ func setFavorite(boardID, userID string, value bool, db *sql.DB) error {
 	rows, err := db.Query(`
 		INSERT INTO owned_boards(user_id, board_id, show) VALUES($1, $2, $3)
 		ON CONFLICT (user_id, board_id)
-		DO
-		UPDATE
-		SET show=$3
+		DO UPDATE SET show=$3
 	`, userID, boardID, value)
 	if err != nil {
 		log.WithField("msg", err).WithField("board", boardID).WithField("user", userID).WithField("value", value).Warn("Failed to set owned boards")

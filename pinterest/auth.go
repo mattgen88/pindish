@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/mattgen88/pindish/models"
@@ -33,6 +34,9 @@ func GetAuth(state, code string) (*models.PinterestOAuthResponse, error) {
 	}
 
 	if response.StatusCode > 200 {
+		if response.StatusCode == http.StatusTooManyRequests {
+			return nil, ErrAPIOverLimit
+		}
 		return nil, fmt.Errorf("Bad status getting token for user %d", response.StatusCode)
 	}
 

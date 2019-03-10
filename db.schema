@@ -21,12 +21,19 @@ CREATE TABLE IF NOT EXISTS board_counts (
 	followers int
 );
 
+CREATE TABLE IF NOT EXISTS board_recipes (
+	board_id bigint,
+	recipe_id bigint,
+	PRIMARY KEY(board_id, recipe_id)
+);
+
 CREATE TABLE IF NOT EXISTS recipes (
 	id bigint PRIMARY KEY,
 	name varchar,
 	url varchar,
 	serves varchar,
-	serving_summary varchar
+	serving_summary varchar,
+	image varchar
 );
 
 CREATE TABLE IF NOT EXISTS recipe_ingredients (
@@ -37,7 +44,8 @@ CREATE TABLE IF NOT EXISTS recipe_ingredients (
 );
 
 CREATE TABLE IF NOT EXISTS ingredients (
-	id serial PRIMARY KEY,
+	id serial,
 	category varchar,
-	name varchar
+	name varchar,
+	PRIMARY KEY (category, name)
 );

@@ -3,6 +3,7 @@ package pinterest
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/mattgen88/pindish/models"
@@ -29,6 +30,9 @@ func GetMyBoards(token string) ([]models.PinterestBoard, error) {
 	}
 
 	if response.StatusCode > 200 {
+		if response.StatusCode == http.StatusTooManyRequests {
+			return nil, ErrAPIOverLimit
+		}
 		return nil, fmt.Errorf("Bad status getting info on boards %d", response.StatusCode)
 	}
 

@@ -1,10 +1,13 @@
 package pinterest
 
 import (
+	"errors"
 	"net"
 	"net/http"
 	"time"
 )
+
+var ErrAPIOverLimit = errors.New("API over limit")
 
 var netTransport = &http.Transport{
 	Dial: (&net.Dialer{

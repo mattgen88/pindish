@@ -110,17 +110,20 @@ type MetadataRecipe struct {
 		Serves  string `json:"serves"`
 		Summary string `json:"summary"`
 	} `json:"servings"`
-	Name        string       `json:"name"`
+	Name                 string               `json:"name"`
+	IngredientCategories []IngredientCategory `json:"ingredients"`
+}
+
+// IngredientCategory describes an ingredient category
+type IngredientCategory struct {
+	Category    string       `json:"category"`
 	Ingredients []Ingredient `json:"ingredients"`
 }
 
 // Ingredient describes an ingredient
 type Ingredient struct {
-	Category    string `json:"category"`
-	Ingredients []struct {
-		Amount string `json:"amount"`
-		Name   string `json:"name"`
-	} `json:"ingredients"`
+	Amount string `json:"amount"`
+	Name   string `json:"name"`
 }
 
 // PinterestCreator describes a creator

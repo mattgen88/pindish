@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -15,7 +13,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-type MyCustomClaims struct {
+// PindishClaims are the custom claims for pindish
+type PindishClaims struct {
 	ID    string `json:"id"`
 	Token string `json:"token"`
 	FName string `json:"fname"`
@@ -34,11 +33,7 @@ func (h *Handlers) CatchHandler(w http.ResponseWriter, r *http.Request) {
 	var oauth *models.PinterestOAuthResponse
 
 	// Get token from response
-	if viper.GetBool("mock") {
-		oauth, err = getAuthMock(state, code)
-	} else {
-		oauth, err = pinterest.GetAuth(state, code)
-	}
+	oauth, err = pinterest.GetAuth(state, code)
 
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -56,11 +51,7 @@ func (h *Handlers) CatchHandler(w http.ResponseWriter, r *http.Request) {
 	var user *models.PinterestUser
 
 	// Request info about user from pinterest
-	if viper.GetBool("mock") {
-		user, err = getUserMock(oauth)
-	} else {
-		user, err = pinterest.GetMe(oauth.AccessToken)
-	}
+	user, err = pinterest.GetMe(oauth.AccessToken)
 
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -79,7 +70,7 @@ func (h *Handlers) CatchHandler(w http.ResponseWriter, r *http.Request) {
 	mySigningKey := []byte(viper.GetString("signing_key"))
 
 	// Create the Claims
-	claims := MyCustomClaims{
+	claims := PindishClaims{
 		user.ID,
 		user.OAuth.AccessToken,
 		user.FirstName,
@@ -115,18 +106,4 @@ func (h *Handlers) CatchHandler(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, fmt.Sprintf("%s", viper.GetString("frontend_uri")), http.StatusTemporaryRedirect)
 	return
-}
-
-func getAuthMock(state, code string) (*models.PinterestOAuthResponse, error) {
-	data, _ := ioutil.ReadFile("mocks/oauth.json")
-	var oauth models.PinterestOAuthResponse
-	json.Unmarshal(data, &oauth)
-	return &oauth, nil
-}
-
-func getUserMock(o *models.PinterestOAuthResponse) (*models.PinterestUser, error) {
-	data, _ := ioutil.ReadFile("mocks/user.json")
-	var user models.PinterestUserResponse
-	json.Unmarshal(data, &user)
-	return &user.Data, nil
 }

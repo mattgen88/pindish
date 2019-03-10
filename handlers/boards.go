@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"github.com/AreaHQ/jsonhal"
 	"github.com/mattgen88/pindish/models"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 // User describes a user
@@ -28,6 +26,7 @@ type User struct {
 // BoardsResponse describes boards for user
 type BoardsResponse struct {
 	jsonhal.Hal
+	Error error `json:"error,omitempty"`
 }
 
 // Board describes a board resource
@@ -64,29 +63,29 @@ func (h *Handlers) BoardsHandler(w http.ResponseWriter, r *http.Request) {
 		// Error occurred
 		log.Info(err)
 		var boards []models.PinterestBoard
-		if viper.GetBool("mock") {
-			log.Warn("Data from mocks!")
-			boards, err = getBoardsMock(token)
-		} else {
-			boards, err = pinterest.GetMyBoards(token)
+		boards, err = pinterest.GetMyBoards(token)
+		if err != nil {
+			j.Error = err
+		}
 
-			for _, b := range boards {
-				board := Board{
-					Name:        b.Name,
-					URL:         b.URL,
-					Image:       b.Image,
-					ID:          b.ID,
-					Description: b.Description,
-					Counts:      b.Counts,
-				}
-				putBoardDB(getUserID(ctx), b, h.DB)
-				boardsResponse = append(boardsResponse, board)
+		for _, b := range boards {
+			board := Board{
+				Name:        b.Name,
+				URL:         b.URL,
+				Image:       b.Image,
+				ID:          b.ID,
+				Description: b.Description,
+				Counts:      b.Counts,
 			}
+			putBoardDB(getUserID(ctx), b, h.DB)
+			boardsResponse = append(boardsResponse, board)
 		}
-		// Set Links
-		for _, b := range boardsResponse {
-			b.SetLink("recipes", fmt.Sprintf("/recipes/board/%s", b.ID), "recipes")
-		}
+	}
+
+	// Set Links
+	for i, b := range boardsResponse {
+		b.SetLink("self", fmt.Sprintf("/recipes/board/%s", b.ID), "recipes")
+		boardsResponse[i] = b
 	}
 
 	j.SetEmbedded("boards", jsonhal.Embedded(boardsResponse))
@@ -106,13 +105,6 @@ func (h *Handlers) BoardsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/hal+json")
 	w.Write(jsonResponse)
 	return
-}
-
-func getBoardsMock(token string) ([]models.PinterestBoard, error) {
-	data, _ := ioutil.ReadFile("mocks/boards.json")
-	var boards models.PinterestBoardResponse
-	json.Unmarshal(data, &boards)
-	return boards.Data, nil
 }
 
 func putBoardDB(userID string, m models.PinterestBoard, db *sql.DB) error {
