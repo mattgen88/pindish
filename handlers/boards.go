@@ -26,7 +26,7 @@ type User struct {
 // BoardsResponse describes boards for user
 type BoardsResponse struct {
 	jsonhal.Hal
-	Error error `json:"error,omitempty"`
+	Error string `json:"error,omitempty"`
 }
 
 // Board describes a board resource
@@ -65,7 +65,7 @@ func (h *Handlers) BoardsHandler(w http.ResponseWriter, r *http.Request) {
 		var boards []models.PinterestBoard
 		boards, err = pinterest.GetMyBoards(token)
 		if err != nil {
-			j.Error = err
+			j.Error = err.Error()
 		}
 
 		for _, b := range boards {

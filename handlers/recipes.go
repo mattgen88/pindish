@@ -18,7 +18,7 @@ import (
 // RecipesResponse describes boards for user
 type RecipesResponse struct {
 	jsonhal.Hal
-	Error error `json:"error,omitempty"`
+	Error string `json:"error,omitempty"`
 }
 
 // Recipe describes a recipe
@@ -51,11 +51,15 @@ func (h *Handlers) RecipesHandler(w http.ResponseWriter, r *http.Request) {
 	var recipes []Recipe
 	recipes, err = getRecipes(id, h.DB)
 	if err != nil || len(recipes) == 0 {
+		if err != nil {
+			log.Warn(err)
+		}
 
 		var pins []models.PinterestPins
 		pins, err = pinterest.GetBoardPins(token, id)
 		if err != nil {
-			j.Error = err
+			log.Warn(err)
+			j.Error = err.Error()
 		}
 
 		for _, pin := range pins {
@@ -151,7 +155,7 @@ func putRecipes(userid, boardid string, pins []models.PinterestPins, db *sql.DB)
 			INSERT INTO recipes
 			(id, name, url, serves, serving_summary, image)
 			VALUES
-			($1, $2, $3, $4, $5)
+			($1, $2, $3, $4, $5, $6)
 		`,
 			p.ID,
 			p.Metadata.Article.Name,
