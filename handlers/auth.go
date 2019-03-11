@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	uuid "github.com/nu7hatch/gouuid"
@@ -40,6 +41,18 @@ func (h *Handlers) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
 
 	return
+}
+
+// LogoutHandler removes a user's JWT and redirects them back to the app
+func (h *Handlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	// Set jwt
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   "",
+		Path:    "/",
+		Expires: time.Unix(0, 0),
+	})
+	http.Redirect(w, r, fmt.Sprintf("%s", viper.GetString("frontend_uri")), http.StatusTemporaryRedirect)
 }
 
 type key int

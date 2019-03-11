@@ -56,6 +56,7 @@ func main() {
 	r.StrictSlash(true)
 	r.HandleFunc("/", h.HomeHandler)
 	r.HandleFunc("/auth", h.AuthHandler)
+	r.HandleFunc("/logout", h.LogoutHandler)
 	r.HandleFunc("/catch", h.CatchHandler)
 	r.HandleFunc("/boards", handlers.AuthRequired(h.BoardsHandler))
 	r.HandleFunc("/favorite/board/{id:[0-9]+}", handlers.AuthRequired(h.FavoritesHandler))

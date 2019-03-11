@@ -19,6 +19,7 @@ func (h *Handlers) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	j := &HomeResponse{}
 	j.SetLink("self", "/", "")
 	j.SetLink("auth", "/auth", "Authorize")
+	j.SetLink("logout", "/logout", "Log out of session")
 	j.SetLink("catch", "/catch", "Catch endpoint from oauth process")
 	j.SetLink("boards", "/boards", "List authorized user's boards")
 	j.SetLink("search recipes", "/recipes", "Search for recipes by name/description")
